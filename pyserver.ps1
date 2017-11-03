@@ -34,7 +34,8 @@ $helpTxt = @"
 pyserver -type <types> [-title <titles>]
 
 types available:
-    init: loads default flask file in current directory only
+    init: loads default flask files in specified directory
+    js: loads default flask files and js with jQuery in specified directory
     help: loads list of commands in commandline
 
 titles available:
@@ -42,10 +43,40 @@ titles available:
            if type is not set, init is the default
 
 "@
-if ($title){
+
+$jsConfig = @"
+{
+    "typeAcquisition": {
+        "include": [
+            "jquery"
+        ]
+    }
+}
+"@
+
+$jsHtml = @"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css')}}">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>    
+    <script src="{{ url_for('static', filename='scripts/app.js')}}" type="text/javascript"></script>
+    <title>Document</title>
+</head>
+<body>
+</body>
+</html>
+"@
+
+if(!$title){
+    $title = (Resolve-Path .\).Path
+    Write-Host $title
+}
+
+if($type.equals("init")){
     try{
         Write-Host "Building..." -NoNewline
-        mkdir $title > $null
         mkdir $title\templates, $title\static > $null
         mkdir $title\static\css, $title\static\images, $title\static\scripts > $null
         New-Item $title\server.py, $title\static\css\styles.css, $title\templates\index.html,$title\static\scripts\app.js > $null
@@ -56,14 +87,16 @@ if ($title){
         Write-Host " Build Failed! Some files may already exist! To avoid overwriting, those files were skipped"
     }
 }
-elseif($type.equals("init")){
+if($type.equals("js")){
     try{
-        Write-Host "Building... " -NoNewline
-        mkdir templates, static
-        mkdir static\css, static\images, static\scripts
-        New-Item server.py, static\css\styles.css, templates\index.html, static\scripts\app.js
-        $html | Set-Content 'templates\index.html'
-        $py | Set-Content 'server.py'
+        Write-Host "Building..." -NoNewline
+        mkdir $title\templates, $title\static > $null
+        mkdir $title\static\css, $title\static\images, $title\static\scripts > $null
+        New-Item $title\server.py, $title\static\css\styles.css, $title\templates\index.html,$title\static\scripts\app.js, $title\static\scripts\jsconfig.json  > $null
+        $jsHtml | Set-Content $title'\templates\index.html' > $null
+        $py | Set-Content $title'\server.py' > $null
+        $jsConfig | Set-Content $title'\static\scripts\jsconfig.json' > $null
+        Write-Host " Build finished! All filed loaded successfully."
     }catch{
         Write-Host " Build Failed! Some files may already exist! To avoid overwriting, those files were skipped"
     }
